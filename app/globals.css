@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg:             #F5F4F0;
+  --color-surface:        #FFFFFF;
+  --color-border:         #D8D5CE;
+  --color-text-primary:   #1A1A1A;
+  --color-text-secondary: #6B6860;
+  --color-text-muted:     #9E9B93;
+  --color-accent:         #E8562A;
+  --color-accent-bg:      #FDF0EB;
+  --color-positive:       #1A6633;
+  --color-positive-bg:    #EBF5EE;
+  --color-negative:       #842029;
+  --color-negative-bg:    #FDF0F1;
+  --color-gold:           #D4A017;
+  --color-gold-bg:        #FBF0D0;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tabular numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeleton pulse animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.skeleton {
+  background-color: var(--color-border);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Toast slide-up animation */
+@keyframes toast-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter {
+  animation: toast-in 180ms ease-out forwards;
+}
+
+/* Bottom sheet slide-up animation */
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.sheet-enter {
+  animation: sheet-in 200ms ease-out forwards;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .sheet-enter,
+  .toast-enter,
+  .skeleton {
+    animation: none;
+  }
+  .card-hover:hover {
+    transform: none !important;
+  }
+}
+
+/* Student card hover */
+.card-hover {
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.card-hover:hover {
+  border-color: var(--color-accent);
+  transform: scale(1.01);
+}
+.card-hover:active {
+  transform: scale(0.98);
+}
