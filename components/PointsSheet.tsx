@@ -36,7 +36,6 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
     }
   }, [student, fetchedRemaining])
 
-  // Fetch remaining when sheet opens
   if (student && !fetchedRemaining) {
     fetchRemaining()
   }
@@ -71,6 +70,61 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
   const isLimitReached = remaining === 0
   const displayRemaining = remaining ?? 3
 
+  function makeButtonHandlers(colorKey: 'positive' | 'negative', isDisabled: boolean) {
+    const setStyle = (el: HTMLButtonElement, pressed: boolean) => {
+      el.style.backgroundColor = pressed
+        ? `var(--color-${colorKey})`
+        : isDisabled ? '#F5F4F0' : `var(--color-${colorKey}-bg)`
+      el.style.color = pressed
+        ? '#FFFFFF'
+        : isDisabled ? 'var(--color-text-muted)' : `var(--color-${colorKey})`
+    }
+    const get = (e: { currentTarget: HTMLButtonElement }) => e.currentTarget
+    return {
+      onMouseDown:   (e: React.MouseEvent<HTMLButtonElement>)  => { if (!isDisabled) setStyle(get(e), true) },
+      onMouseUp:     (e: React.MouseEvent<HTMLButtonElement>)  => { if (!isDisabled) setStyle(get(e), false) },
+      onMouseLeave:  (e: React.MouseEvent<HTMLButtonElement>)  => { if (!isDisabled) setStyle(get(e), false) },
+      onTouchStart:  (e: React.TouchEvent<HTMLButtonElement>)  => { if (!isDisabled) setStyle(get(e), true) },
+      onTouchEnd:    (e: React.TouchEvent<HTMLButtonElement>)  => { if (!isDisabled) setStyle(get(e), false) },
+      onTouchCancel: (e: React.TouchEvent<HTMLButtonElement>)  => { if (!isDisabled) setStyle(get(e), false) },
+    }
+  }
+
+  function renderButtonRow(vals: number[], colorKey: 'positive' | 'negative') {
+    const isDisabled = isLimitReached || loading
+    const handlers = makeButtonHandlers(colorKey, isDisabled)
+    return (
+      <div style={{ display: 'flex', gap: 10 }}>
+        {vals.map((val) => (
+          <button
+            key={val}
+            disabled={isDisabled}
+            onClick={() => awardPoints(val)}
+            {...handlers}
+            style={{
+              flex: 1,
+              height: 72,
+              fontSize: 20,
+              fontWeight: 700,
+              border: `1.5px solid var(--color-${colorKey})`,
+              backgroundColor: isDisabled ? '#F5F4F0' : `var(--color-${colorKey}-bg)`,
+              color: isDisabled ? 'var(--color-text-muted)' : `var(--color-${colorKey})`,
+              borderRadius: 10,
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
+              opacity: isDisabled ? 0.5 : 1,
+              transition: 'background-color 80ms ease, color 80ms ease',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              userSelect: 'none',
+            }}
+          >
+            {val > 0 ? '+' : ''}{val}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <>
       {/* Backdrop */}
@@ -85,40 +139,41 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
         }}
       />
 
-      {/* Sheet */}
+      {/* Sheet — uses left/right/margin centering so the slide-up animation doesn't conflict with a horizontal transform */}
       <div
         className="sheet-enter"
         style={{
           position: 'fixed',
           bottom: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: 0,
+          right: 0,
+          margin: '0 auto',
           width: '100%',
           maxWidth: 480,
-          height: 320,
           backgroundColor: 'var(--color-surface)',
-          borderRadius: '16px 16px 0 0',
+          borderRadius: '20px 20px 0 0',
           zIndex: 101,
           display: 'flex',
           flexDirection: 'column',
-          padding: '20px 20px 32px',
+          padding: '16px 20px',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
         }}
       >
         {/* Drag handle */}
         <div style={{
-          width: 36,
+          width: 40,
           height: 4,
           backgroundColor: 'var(--color-border)',
           borderRadius: 2,
           alignSelf: 'center',
-          marginBottom: 16,
+          marginBottom: 20,
           flexShrink: 0,
         }} />
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text-primary)' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)' }}>
               {student.name}
             </div>
             <div style={{
@@ -130,11 +185,12 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
               {student.totalPoints > 0 ? '+' : ''}{student.totalPoints} pts total
             </div>
           </div>
+          {/* 44×44 tap target — Apple's minimum recommended size */}
           <button
             onClick={onClose}
             style={{
-              width: 32,
-              height: 32,
+              width: 44,
+              height: 44,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -143,8 +199,13 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
               borderRadius: '50%',
               cursor: 'pointer',
               color: 'var(--color-text-secondary)',
-              fontSize: 18,
+              fontSize: 20,
               lineHeight: 1,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              flexShrink: 0,
+              marginTop: -6,
+              marginRight: -4,
             }}
           >
             ×
@@ -153,13 +214,13 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
 
         {/* Transaction limit */}
         <div style={{
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 500,
           color: isLimitReached ? '#92400E' : 'var(--color-text-muted)',
           backgroundColor: isLimitReached ? '#FEF3C7' : 'transparent',
-          padding: isLimitReached ? '6px 10px' : '0',
-          borderRadius: isLimitReached ? 'var(--radius-sm)' : 0,
-          marginBottom: 14,
+          padding: isLimitReached ? '8px 12px' : '0',
+          borderRadius: isLimitReached ? 'var(--radius-md)' : 0,
+          marginBottom: 16,
           flexShrink: 0,
         }}>
           {isLimitReached
@@ -168,100 +229,9 @@ export default function PointsSheet({ student, onClose, onPointsAwarded }: Point
         </div>
 
         {/* Point buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-          {/* Positive row */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            {POSITIVE_VALS.map((val) => (
-              <button
-                key={val}
-                disabled={isLimitReached || loading}
-                onClick={() => awardPoints(val)}
-                style={{
-                  flex: 1,
-                  height: 64,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  border: '1.5px solid var(--color-positive)',
-                  backgroundColor: isLimitReached ? '#F5F4F0' : 'var(--color-positive-bg)',
-                  color: isLimitReached ? 'var(--color-text-muted)' : 'var(--color-positive)',
-                  borderRadius: 0,
-                  cursor: isLimitReached ? 'not-allowed' : 'pointer',
-                  opacity: isLimitReached ? 0.5 : 1,
-                  transition: 'all 80ms ease',
-                }}
-                onMouseDown={(e) => {
-                  if (!isLimitReached) {
-                    const t = e.currentTarget
-                    t.style.backgroundColor = 'var(--color-positive)'
-                    t.style.color = '#FFFFFF'
-                  }
-                }}
-                onMouseUp={(e) => {
-                  if (!isLimitReached) {
-                    const t = e.currentTarget
-                    t.style.backgroundColor = 'var(--color-positive-bg)'
-                    t.style.color = 'var(--color-positive)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isLimitReached) {
-                    const t = e.currentTarget
-                    t.style.backgroundColor = 'var(--color-positive-bg)'
-                    t.style.color = 'var(--color-positive)'
-                  }
-                }}
-              >
-                +{val}
-              </button>
-            ))}
-          </div>
-
-          {/* Negative row */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            {NEGATIVE_VALS.map((val) => (
-              <button
-                key={val}
-                disabled={isLimitReached || loading}
-                onClick={() => awardPoints(val)}
-                style={{
-                  flex: 1,
-                  height: 64,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  border: '1.5px solid var(--color-negative)',
-                  backgroundColor: isLimitReached ? '#F5F4F0' : 'var(--color-negative-bg)',
-                  color: isLimitReached ? 'var(--color-text-muted)' : 'var(--color-negative)',
-                  borderRadius: 0,
-                  cursor: isLimitReached ? 'not-allowed' : 'pointer',
-                  opacity: isLimitReached ? 0.5 : 1,
-                  transition: 'all 80ms ease',
-                }}
-                onMouseDown={(e) => {
-                  if (!isLimitReached) {
-                    const t = e.currentTarget
-                    t.style.backgroundColor = 'var(--color-negative)'
-                    t.style.color = '#FFFFFF'
-                  }
-                }}
-                onMouseUp={(e) => {
-                  if (!isLimitReached) {
-                    const t = e.currentTarget
-                    t.style.backgroundColor = 'var(--color-negative-bg)'
-                    t.style.color = 'var(--color-negative)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isLimitReached) {
-                    const t = e.currentTarget
-                    t.style.backgroundColor = 'var(--color-negative-bg)'
-                    t.style.color = 'var(--color-negative)'
-                  }
-                }}
-              >
-                {val}
-              </button>
-            ))}
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {renderButtonRow(POSITIVE_VALS, 'positive')}
+          {renderButtonRow(NEGATIVE_VALS, 'negative')}
         </div>
       </div>
 
